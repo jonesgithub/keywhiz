@@ -39,6 +39,7 @@ import io.dropwizard.jdbi.args.JodaDateTimeArgumentFactory;
 import io.dropwizard.jdbi.args.JodaDateTimeMapper;
 import io.dropwizard.jdbi.logging.LogbackLog;
 import io.dropwizard.setup.Environment;
+import java.sql.SQLException;
 import java.time.Clock;
 import keywhiz.auth.BouncyCastle;
 import keywhiz.auth.User;
@@ -60,6 +61,9 @@ import keywhiz.service.daos.MapArgumentFactory;
 import keywhiz.service.daos.SecretController;
 import keywhiz.service.daos.SecretDAO;
 import keywhiz.service.daos.SecretSeriesDAO;
+import keywhiz.service.daos.UserJooqDao;
+import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.skife.jdbi.v2.ColonPrefixNamedParamStatementRewriter;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.LoggerFactory;
@@ -121,20 +125,24 @@ public class ServiceModule extends AbstractModule {
     return dbi;
   }
 
+  @Provides @Singleton ManagedDataSource writableDataSource(Environment environment, KeywhizConfig config) {
+    DataSourceFactory dataSourceFactory = config.getDataSourceFactory();
+    ManagedDataSource dataSource = dataSourceFactory.build(environment.metrics(), "postgres-writable");
+    environment.lifecycle().manage(dataSource);
+
+    return dataSource;
+  }
+
   /**
    * Super lame copy of functionality from {@link DBIFactory}. Want both DBI instances to perform
    * similarly, however do NOT want a health check of the writable DBI. Failure should allow host
    * to remain in rotation of healthy servers since readonly DBI sufficient for critical tasks.
    */
   @Provides @Singleton DBI dbi(Environment environment, KeywhizConfig config,
-      MapArgumentFactory mapArgumentFactory) throws ClassNotFoundException {
+      MapArgumentFactory mapArgumentFactory, ManagedDataSource dataSource) throws ClassNotFoundException {
     logger.debug("Creating DBI");
+
     DataSourceFactory dataSourceFactory = config.getDataSourceFactory();
-
-    ManagedDataSource dataSource = dataSourceFactory.build(environment.metrics(), "postgres-writable");
-
-    environment.lifecycle().manage(dataSource);
-
     final DBI dbi = new DBI(dataSource);
     dbi.setSQLLog(new LogbackLog(DBI_LOGGER, Level.TRACE));
     dbi.setTimingCollector(new InstrumentedTimingCollector(environment.metrics(),
@@ -210,7 +218,12 @@ public class ServiceModule extends AbstractModule {
     return dbi.onDemand(AclDAO.class);
   }
 
-  @Provides @Singleton Authenticator<BasicCredentials, User> authenticator(KeywhizConfig config, DBI dbi) {
-    return config.getUserAuthenticatorFactory().build(dbi);
+  @Provides @Singleton DSLContext jooqContext(ManagedDataSource dataSource) throws SQLException {
+    return DSL.using(dataSource.getConnection());
+  }
+
+  @Provides @Singleton Authenticator<BasicCredentials, User> authenticator(KeywhizConfig config, DSLContext jooqContext) {
+    UserJooqDao userJooqDao = new UserJooqDao(jooqContext);
+    return config.getUserAuthenticatorFactory().build(userJooqDao);
   }
 }

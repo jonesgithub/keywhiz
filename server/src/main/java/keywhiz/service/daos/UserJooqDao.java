@@ -22,9 +22,6 @@ import org.jooq.DSLContext;
 
 import static keywhiz.jooq.tables.Users.USERS;
 
-/**
- * Jooq version of UserDAO.
- */
 public class UserJooqDao {
   private final DSLContext dslContext;
 

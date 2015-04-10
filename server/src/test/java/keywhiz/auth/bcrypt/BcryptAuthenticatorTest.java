@@ -18,7 +18,7 @@ package keywhiz.auth.bcrypt;
 import io.dropwizard.auth.basic.BasicCredentials;
 import java.util.Optional;
 import keywhiz.auth.User;
-import keywhiz.service.daos.UserDAO;
+import keywhiz.service.daos.UserJooqDao;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,18 +37,18 @@ public class BcryptAuthenticatorTest {
 
   @Rule public TestRule mockito = new MockitoJUnitRule(this);
 
-  @Mock UserDAO userDAO;
+  @Mock UserJooqDao userJooqDao;
 
   @Before
   public void setup() throws Exception {
     // set up a credential
-    bcryptAuthenticator = new BcryptAuthenticator(userDAO);
+    bcryptAuthenticator = new BcryptAuthenticator(userJooqDao);
     hashedPass = BCrypt.hashpw("validpass", BCrypt.gensalt());
   }
 
   @Test
   public void bcryptAuthenticatorCreatesUserOnSuccess() throws Exception {
-    when(userDAO.getHashedPassword("sysadmin"))
+    when(userJooqDao.getHashedPassword("sysadmin"))
         .thenReturn(Optional.of(hashedPass));
 
     User user = bcryptAuthenticator.authenticate(new BasicCredentials("sysadmin", "validpass"))
@@ -58,7 +58,7 @@ public class BcryptAuthenticatorTest {
 
   @Test
   public void bcryptAuthenticatorFailsForBadPassword() throws Exception {
-    when(userDAO.getHashedPassword("sysadmin"))
+    when(userJooqDao.getHashedPassword("sysadmin"))
         .thenReturn(Optional.of(hashedPass));
 
     Optional<User> missingUser =
@@ -68,7 +68,7 @@ public class BcryptAuthenticatorTest {
 
   @Test
   public void bcryptAuthenticatorFailsForBadUser() throws Exception {
-    when(userDAO.getHashedPassword("invaliduser"))
+    when(userJooqDao.getHashedPassword("invaliduser"))
         .thenReturn(Optional.empty());
 
     Optional<User> missingUser =
