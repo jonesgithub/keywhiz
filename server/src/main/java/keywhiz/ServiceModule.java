@@ -56,7 +56,6 @@ import keywhiz.service.crypto.CryptoModule;
 import keywhiz.service.crypto.SecretTransformer;
 import keywhiz.service.daos.AclJooqDao;
 import keywhiz.service.daos.ClientJooqDao;
-import keywhiz.service.daos.GroupDAO;
 import keywhiz.service.daos.GroupJooqDao;
 import keywhiz.service.daos.MapArgumentFactory;
 import keywhiz.service.daos.SecretContentJooqDao;
@@ -189,14 +188,6 @@ public class ServiceModule extends AbstractModule {
   @Provides @Singleton SecretController secretController(SecretTransformer transformer,
       ContentCryptographer cryptographer, SecretDAO secretDAO) {
     return new SecretController(transformer, cryptographer, secretDAO);
-  }
-
-  @Provides @Singleton @Readonly GroupDAO readonlyGroupDAO(@Readonly DBI dbi) {
-    return dbi.onDemand(GroupDAO.class);
-  }
-
-  @Provides @Singleton GroupDAO groupDAO(DBI dbi) {
-    return dbi.onDemand(GroupDAO.class);
   }
 
   @Provides @Singleton @Readonly SecretDAO readonlySecretDAO(@Readonly DBI dbi) {

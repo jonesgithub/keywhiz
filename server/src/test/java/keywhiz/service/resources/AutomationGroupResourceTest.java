@@ -30,7 +30,7 @@ import keywhiz.api.model.Group;
 import keywhiz.api.model.SanitizedSecret;
 import keywhiz.auth.User;
 import keywhiz.service.daos.AclJooqDao;
-import keywhiz.service.daos.GroupDAO;
+import keywhiz.service.daos.GroupJooqDao;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 public class AutomationGroupResourceTest {
   @Rule public TestRule mockito = new MockitoJUnitRule(this);
 
-  @Mock GroupDAO groupDAO;
+  @Mock GroupJooqDao groupJooqDao;
   @Mock AclJooqDao aclJooqDao;
   User user = User.named("user");
   OffsetDateTime now = OffsetDateTime.now();
@@ -54,12 +54,12 @@ public class AutomationGroupResourceTest {
   AutomationGroupResource resource;
 
   @Before public void setUp() {
-    resource = new AutomationGroupResource(groupDAO, aclJooqDao);
+    resource = new AutomationGroupResource(groupJooqDao, aclJooqDao);
   }
 
   @Test public void findGroupById() {
     Group group = new Group(50, "testGroup", "testing group", now, "automation client", now, "automation client");
-    when(groupDAO.getGroupById(50)).thenReturn(Optional.of(group));
+    when(groupJooqDao.getGroupById(50)).thenReturn(Optional.of(group));
     when(aclJooqDao.getClientsFor(group)).thenReturn(ImmutableSet.of());
     when(aclJooqDao.getSanitizedSecretsFor(group)).thenReturn(ImmutableSet.of());
 
@@ -71,7 +71,7 @@ public class AutomationGroupResourceTest {
 
   @Test public void findGroupByName() {
     Group group = new Group(50, "testGroup", "testing group", now, "automation client", now, "automation client");
-    when(groupDAO.getGroup("testGroup")).thenReturn(Optional.of(group));
+    when(groupJooqDao.getGroup("testGroup")).thenReturn(Optional.of(group));
     when(aclJooqDao.getClientsFor(group)).thenReturn(ImmutableSet.of());
     when(aclJooqDao.getSanitizedSecretsFor(group)).thenReturn(ImmutableSet.of());
 
@@ -90,7 +90,7 @@ public class AutomationGroupResourceTest {
     SanitizedSecret secondGroupSecret =
         SanitizedSecret.of(2, "name2", "v1", "desc", now, "test", now, "test", null, "", null);
 
-    when(groupDAO.getGroup("testGroup")).thenReturn(Optional.of(group));
+    when(groupJooqDao.getGroup("testGroup")).thenReturn(Optional.of(group));
     when(aclJooqDao.getClientsFor(group)).thenReturn(ImmutableSet.of(groupClient));
     when(aclJooqDao.getSanitizedSecretsFor(group))
         .thenReturn(ImmutableSet.of(firstGroupSecret, secondGroupSecret));
@@ -106,9 +106,9 @@ public class AutomationGroupResourceTest {
 
     CreateGroupRequest request = new CreateGroupRequest("testGroup", null);
 
-    when(groupDAO.getGroup("testGroup")).thenReturn(Optional.empty());
-    when(groupDAO.createGroup(group.getName(), automation.getName(), Optional.empty())).thenReturn(500L);
-    when(groupDAO.getGroupById(500L)).thenReturn(Optional.of(group));
+    when(groupJooqDao.getGroup("testGroup")).thenReturn(Optional.empty());
+    when(groupJooqDao.createGroup(group.getName(), automation.getName(), Optional.empty())).thenReturn(500L);
+    when(groupJooqDao.getGroupById(500L)).thenReturn(Optional.of(group));
     Group responseGroup = resource.createGroup(automation, request);
 
     assertThat(responseGroup).isEqualTo(group);
