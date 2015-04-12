@@ -30,7 +30,6 @@ import org.jooq.DSLContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.skife.jdbi.v2.DBI;
 
 import static keywhiz.jooq.tables.Accessgrants.ACCESSGRANTS;
 import static keywhiz.jooq.tables.Clients.CLIENTS;
@@ -60,8 +59,6 @@ public class AclDAOTest {
     jooqContext.delete(GROUPS).execute();
     jooqContext.delete(SECRETS).execute();
     jooqContext.delete(SECRETS_CONTENT).execute();
-
-    DBI dbi = testDBRule.getDbi();
 
     clientDAO = new ClientDAO(jooqContext);
     long id = clientDAO.createClient("client1", "creator", Optional.empty());
