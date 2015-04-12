@@ -17,9 +17,12 @@
 package keywhiz.service.daos;
 
 import keywhiz.api.model.Client;
+import keywhiz.jooq.tables.Clients;
 import keywhiz.jooq.tables.records.ClientsRecord;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
+
+import static keywhiz.jooq.tables.Clients.CLIENTS;
 
 /**
  * Jooq has the ability to map records to classes using Reflection. We however need a mapper because
@@ -30,13 +33,21 @@ import org.jooq.RecordMapper;
  * The way jooq built their generic API is somewhat broken, so we need to implement
  * RecordMapper<Record, Client> instead of RecordMapper<ClientsRecord, Client>. I'll file a task
  * and follow up on this issue.
+ *
+ * Also, when doing JOINS, I don't know how to preserve the Record type.
  */
 class ClientJooqMapper implements RecordMapper<Record, Client> {
-  public Client map(Record record) {
-    // :(
-    ClientsRecord r = (ClientsRecord) record;
-    return new Client(r.getId(), r.getName(), r.getDescription(), r.getCreatedat(),
-        r.getCreatedby(), r.getUpdatedat(), r.getUpdatedby(), r.getEnabled(),
-        r.getAutomationallowed());
+  public Client map(Record r) {
+    // Lots of :(
+    return new Client(
+        r.getValue(CLIENTS.ID),
+        r.getValue(CLIENTS.NAME),
+        r.getValue(CLIENTS.DESCRIPTION),
+        r.getValue(CLIENTS.CREATEDAT),
+        r.getValue(CLIENTS.CREATEDBY),
+        r.getValue(CLIENTS.UPDATEDAT),
+        r.getValue(CLIENTS.UPDATEDBY),
+        r.getValue(CLIENTS.ENABLED),
+        r.getValue(CLIENTS.AUTOMATIONALLOWED));
   }
 }

@@ -18,16 +18,24 @@ package keywhiz.service.daos;
 
 import com.google.common.collect.ImmutableMap;
 import keywhiz.api.model.SecretSeries;
+import keywhiz.jooq.tables.Secrets;
 import keywhiz.jooq.tables.records.SecretsRecord;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
 
-class SecretSeriesJooqMapper implements RecordMapper<Record, SecretSeries> {
-  public SecretSeries map(Record record) {
-    SecretsRecord r = (SecretsRecord) record;
+import static keywhiz.jooq.tables.Secrets.SECRETS;
 
-    return new SecretSeries(r.getId(), r.getName(), r.getDescription(), r.getCreatedat(),
-        r.getCreatedby(), r.getUpdatedat(), r.getUpdatedby(), r.getType(),
+class SecretSeriesJooqMapper implements RecordMapper<Record, SecretSeries> {
+  public SecretSeries map(Record r) {
+    return new SecretSeries(
+        r.getValue(SECRETS.ID),
+        r.getValue(SECRETS.NAME),
+        r.getValue(SECRETS.DESCRIPTION),
+        r.getValue(SECRETS.CREATEDAT),
+        r.getValue(SECRETS.CREATEDBY),
+        r.getValue(SECRETS.UPDATEDAT),
+        r.getValue(SECRETS.UPDATEDBY),
+        r.getValue(SECRETS.TYPE),
         ImmutableMap.of() /* TODO: handle generationOptions */);
   }
 }

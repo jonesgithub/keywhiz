@@ -21,10 +21,17 @@ import keywhiz.jooq.tables.records.GroupsRecord;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
 
+import static keywhiz.jooq.tables.Groups.GROUPS;
+
 class GroupJooqMapper implements RecordMapper<Record, Group> {
-  public Group map(Record record) {
-    GroupsRecord r = (GroupsRecord) record;
-    return new Group(r.getId(), r.getName(), r.getDescription(), r.getCreatedat(), r.getCreatedby(),
-        r.getUpdatedat(), r.getUpdatedby());
+  public Group map(Record r) {
+    return new Group(
+        r.getValue(GROUPS.ID),
+        r.getValue(GROUPS.NAME),
+        r.getValue(GROUPS.DESCRIPTION),
+        r.getValue(GROUPS.CREATEDAT),
+        r.getValue(GROUPS.CREATEDBY),
+        r.getValue(GROUPS.UPDATEDAT),
+        r.getValue(GROUPS.UPDATEDBY));
   }
 }

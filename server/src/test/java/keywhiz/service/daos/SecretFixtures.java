@@ -27,11 +27,13 @@ import keywhiz.service.crypto.SecretTransformer;
  */
 public class SecretFixtures {
   private final SecretDAO secretDAO;
+  private final SecretJooqDao secretJooqDao;
   private final ContentCryptographer cryptographer;
   private final SecretTransformer transformer;
 
-  private SecretFixtures(SecretDAO secretDAO) {
+  private SecretFixtures(SecretDAO secretDAO, SecretJooqDao secretJooqDao) {
     this.secretDAO = secretDAO;
+    this.secretJooqDao = secretJooqDao;
     this.cryptographer = CryptoFixtures.contentCryptographer();
     this.transformer = new SecretTransformer(cryptographer);
   }
@@ -40,7 +42,11 @@ public class SecretFixtures {
    * @return builds a fixture-making object using the given SecretDAO
    */
   public static SecretFixtures using(SecretDAO secretDAO) {
-    return new SecretFixtures(secretDAO);
+    return new SecretFixtures(secretDAO, null);
+  }
+
+  public static SecretFixtures using(SecretJooqDao secretJooqDao) {
+    return new SecretFixtures(null, secretJooqDao);
   }
 
   /**
@@ -64,8 +70,17 @@ public class SecretFixtures {
    */
   public Secret createSecret(String name, String content, String version) {
     String encryptedContent = cryptographer.encryptionKeyDerivedFrom(name).encrypt(content);
-    long id = secretDAO.createSecret(name, encryptedContent, version, "creator",
-        ImmutableMap.of(), "", null, ImmutableMap.of());
-    return transformer.transform(secretDAO.getSecretByIdAndVersion(id, version).get());
+    if (secretDAO != null) {
+      long id =
+          secretDAO.createSecret(name, encryptedContent, version, "creator", ImmutableMap.of(), "",
+              null, ImmutableMap.of());
+      return transformer.transform(secretDAO.getSecretByIdAndVersion(id, version).get());
+    } else if (secretJooqDao != null) {
+      long id =
+          secretJooqDao.createSecret(name, encryptedContent, version, "creator", ImmutableMap.of(),
+              "", null, ImmutableMap.of());
+      return transformer.transform(secretJooqDao.getSecretByIdAndVersion(id, version).get());
+    }
+    return null;
   }
 }
