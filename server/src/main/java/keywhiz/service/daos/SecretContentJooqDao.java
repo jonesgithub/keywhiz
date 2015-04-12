@@ -22,16 +22,9 @@ import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
 import keywhiz.api.model.SecretContent;
-import keywhiz.jooq.tables.SecretsContent;
 import keywhiz.jooq.tables.records.SecretsContentRecord;
 import org.jooq.DSLContext;
 import org.jooq.tools.json.JSONObject;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
-import org.skife.jdbi.v2.sqlobject.customizers.SingleValueResult;
 
 import static keywhiz.jooq.tables.SecretsContent.SECRETS_CONTENT;
 
