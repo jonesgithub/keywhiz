@@ -56,7 +56,7 @@ public class SecretSeriesJooqDao {
     return r.getId();
   }
 
-  Optional<SecretSeries> getSecretSeriesById(long id) {
+  public Optional<SecretSeries> getSecretSeriesById(long id) {
     SecretsRecord r = dslContext.fetchOne(SECRETS, SECRETS.ID.eq((int) id));
     if (r != null) {
       return Optional.of(r.map(new SecretSeriesJooqMapper()));
@@ -64,7 +64,7 @@ public class SecretSeriesJooqDao {
     return Optional.empty();
   }
 
-  Optional<SecretSeries> getSecretSeriesByName(String name) {
+  public Optional<SecretSeries> getSecretSeriesByName(String name) {
     SecretsRecord r = dslContext.fetchOne(SECRETS, SECRETS.NAME.eq(name));
     if (r != null) {
       return Optional.of(r.map(new SecretSeriesJooqMapper()));
