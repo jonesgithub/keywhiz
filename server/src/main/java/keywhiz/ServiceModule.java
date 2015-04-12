@@ -54,13 +54,17 @@ import keywhiz.service.config.Readonly;
 import keywhiz.service.crypto.ContentCryptographer;
 import keywhiz.service.crypto.CryptoModule;
 import keywhiz.service.crypto.SecretTransformer;
-import keywhiz.service.daos.AclDAO;
+import keywhiz.service.daos.AclJooqDao;
 import keywhiz.service.daos.ClientDAO;
+import keywhiz.service.daos.ClientJooqDao;
 import keywhiz.service.daos.GroupDAO;
+import keywhiz.service.daos.GroupJooqDao;
 import keywhiz.service.daos.MapArgumentFactory;
+import keywhiz.service.daos.SecretContentJooqDao;
 import keywhiz.service.daos.SecretController;
 import keywhiz.service.daos.SecretDAO;
 import keywhiz.service.daos.SecretSeriesDAO;
+import keywhiz.service.daos.SecretSeriesJooqDao;
 import keywhiz.service.daos.UserJooqDao;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -130,6 +134,16 @@ public class ServiceModule extends AbstractModule {
     ManagedDataSource dataSource = dataSourceFactory.build(environment.metrics(), "postgres-writable");
     environment.lifecycle().manage(dataSource);
 
+    return dataSource;
+  }
+
+  @Provides @Singleton
+  @Readonly ManagedDataSource readonlyDataSource(Environment environment, KeywhizConfig config) {
+    logger.debug("Creating read-only data source");
+    DataSourceFactory dataSourceFactory = config.getReadonlyDataSourceFactory();
+    ManagedDataSource dataSource = dataSourceFactory.build(environment.metrics(),
+        "postgres-readonly");
+    // TODO: do we need to do environment.lifecycle().manage(dataSource)?
     return dataSource;
   }
 
@@ -210,18 +224,62 @@ public class ServiceModule extends AbstractModule {
     return dbi.onDemand(SecretSeriesDAO.class);
   }
 
-  @Provides @Singleton @Readonly AclDAO readonlyAclDAO(@Readonly DBI dbi) {
-    return dbi.onDemand(AclDAO.class);
-  }
-
-  @Provides @Singleton AclDAO aclDAO(DBI dbi) {
-    return dbi.onDemand(AclDAO.class);
-  }
-
   @Provides @Singleton DSLContext jooqContext(ManagedDataSource dataSource) throws SQLException {
     return DSL.using(dataSource.getConnection());
   }
 
+  @Provides @Singleton ClientJooqDao clientJooqDao(DSLContext jooqContext) {
+    return new ClientJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton GroupJooqDao groupJooqDao(DSLContext jooqContext) {
+    return new GroupJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton SecretContentJooqDao secretContentJooqDao(DSLContext jooqContext) {
+    return new SecretContentJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton SecretSeriesJooqDao secretSeriesJooqDao(DSLContext jooqContext) {
+    return new SecretSeriesJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton AclJooqDao aclJooqDao(DSLContext jooqContext, ClientJooqDao clientJooqDao,
+      GroupJooqDao groupJooqDao, SecretContentJooqDao secretContentJooqDao,
+      SecretSeriesJooqDao secretSeriesJooqDao) {
+    return new AclJooqDao(jooqContext, clientJooqDao, groupJooqDao, secretContentJooqDao,
+        secretSeriesJooqDao);
+  }
+
+  @Provides @Singleton @Readonly DSLContext readonlyJooqContext(/* @Readonly but PSql only allows 1 connection? */ ManagedDataSource dataSource) throws SQLException {
+    return DSL.using(dataSource.getConnection());
+  }
+
+  @Provides @Singleton @Readonly ClientJooqDao readonlyClientJooqDao(@Readonly DSLContext jooqContext) {
+    return new ClientJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton @Readonly GroupJooqDao readonlyGroupJooqDao(@Readonly DSLContext jooqContext) {
+    return new GroupJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton @Readonly SecretContentJooqDao readonlySecretContentJooqDao(@Readonly DSLContext jooqContext) {
+    return new SecretContentJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton @Readonly SecretSeriesJooqDao readonlySecretSeriesJooqDao(@Readonly DSLContext jooqContext) {
+    return new SecretSeriesJooqDao(jooqContext);
+  }
+
+  @Provides @Singleton @Readonly AclJooqDao readonlyAclJooqDao(@Readonly DSLContext jooqContext,
+      @Readonly ClientJooqDao clientJooqDao, @Readonly GroupJooqDao groupJooqDao,
+      @Readonly SecretContentJooqDao secretContentJooqDao,
+      @Readonly SecretSeriesJooqDao secretSeriesJooqDao) {
+    return new AclJooqDao(jooqContext, clientJooqDao, groupJooqDao, secretContentJooqDao,
+        secretSeriesJooqDao);
+  }
+
+  // Should be readonly jooqContext?
   @Provides @Singleton Authenticator<BasicCredentials, User> authenticator(KeywhizConfig config, DSLContext jooqContext) {
     UserJooqDao userJooqDao = new UserJooqDao(jooqContext);
     return config.getUserAuthenticatorFactory().build(userJooqDao);

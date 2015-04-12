@@ -34,7 +34,7 @@ import static keywhiz.jooq.tables.Clients.CLIENTS;
  * My plan is to therefore first implement all the jooq DAOs and then gradually remove the jdbi
  * stuff.
  */
-class ClientJooqDao {
+public class ClientJooqDao {
   private final DSLContext dslContext;
 
   @Inject

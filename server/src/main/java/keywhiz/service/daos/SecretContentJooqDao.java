@@ -37,8 +37,8 @@ import static keywhiz.jooq.tables.SecretsContent.SECRETS_CONTENT;
 
 /**
  * Jooq version of SecretContentDAO.
-  */
-class SecretContentJooqDao {
+ */
+public class SecretContentJooqDao {
   private final DSLContext dslContext;
 
   @Inject

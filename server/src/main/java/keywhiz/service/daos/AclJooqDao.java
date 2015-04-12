@@ -44,7 +44,7 @@ import static keywhiz.jooq.tables.Memberships.MEMBERSHIPS;
 import static keywhiz.jooq.tables.Secrets.SECRETS;
 import static keywhiz.jooq.tables.SecretsContent.SECRETS_CONTENT;
 
-class AclJooqDao {
+public class AclJooqDao {
   private static final Logger logger = LoggerFactory.getLogger(AclJooqDao.class);
 
   private final DSLContext dslContext;
@@ -170,8 +170,10 @@ class AclJooqDao {
     List<Group> r = dslContext
         .select(GROUPS.ID, GROUPS.NAME, GROUPS.DESCRIPTION, GROUPS.CREATEDAT, GROUPS.CREATEDBY,
             GROUPS.UPDATEDAT, GROUPS.UPDATEDBY)
-        .from(GROUPS.join(MEMBERSHIPS).on(GROUPS.ID.eq(MEMBERSHIPS.GROUPID))
-            .join(CLIENTS).on(CLIENTS.ID.eq(MEMBERSHIPS.CLIENTID)))
+        .from(GROUPS.join(MEMBERSHIPS)
+            .on(GROUPS.ID.eq(MEMBERSHIPS.GROUPID))
+            .join(CLIENTS)
+            .on(CLIENTS.ID.eq(MEMBERSHIPS.CLIENTID)))
         .where(CLIENTS.NAME.eq(client.getName()))
         .fetch()
         .map(new GroupJooqMapper());
