@@ -28,7 +28,7 @@ import keywhiz.api.model.Client;
 import keywhiz.api.model.Group;
 import keywhiz.auth.User;
 import keywhiz.service.daos.AclJooqDao;
-import keywhiz.service.daos.ClientDAO;
+import keywhiz.service.daos.ClientJooqDao;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 public class AutomationClientResourceTest {
   @Rule public TestRule mockito = new MockitoJUnitRule(this);
 
-  @Mock ClientDAO clientDAO;
+  @Mock ClientJooqDao clientJooqDao;
   @Mock AclJooqDao aclJooqDao;
   User user = User.named("user");
   OffsetDateTime now = OffsetDateTime.now();
@@ -52,7 +52,7 @@ public class AutomationClientResourceTest {
   AutomationClientResource resource;
 
   @Before public void setUp() {
-    resource = new AutomationClientResource(clientDAO, aclJooqDao);
+    resource = new AutomationClientResource(clientJooqDao, aclJooqDao);
   }
 
   @Test public void findClientByName() {
@@ -62,7 +62,7 @@ public class AutomationClientResourceTest {
     ClientDetailResponse expectedClient = ClientDetailResponse.fromClient(client,
         ImmutableList.of(firstGroup, secondGroup), ImmutableList.of());
 
-    when(clientDAO.getClient("client")).thenReturn(Optional.of(client));
+    when(clientJooqDao.getClient("client")).thenReturn(Optional.of(client));
     when(aclJooqDao.getGroupsFor(client)).thenReturn(ImmutableSet.of(firstGroup, secondGroup));
 
     Response response = resource.findClient(automation, Optional.of("client"));
@@ -73,7 +73,7 @@ public class AutomationClientResourceTest {
 
   @Test(expected = NotFoundException.class)
   public void findClientByNameNotFound() {
-    when(clientDAO.getClient("client")).thenReturn(Optional.empty());
+    when(clientJooqDao.getClient("client")).thenReturn(Optional.empty());
     resource.findClient(automation, Optional.of("client"));
   }
 
@@ -82,9 +82,9 @@ public class AutomationClientResourceTest {
 
     CreateClientRequest request = new CreateClientRequest("client");
 
-    when(clientDAO.getClient("client")).thenReturn(Optional.empty());
-    when(clientDAO.createClient("client", automation.getName(), Optional.empty())).thenReturn(543L);
-    when(clientDAO.getClientById(543L)).thenReturn(Optional.of(client));
+    when(clientJooqDao.getClient("client")).thenReturn(Optional.empty());
+    when(clientJooqDao.createClient("client", automation.getName(), Optional.empty())).thenReturn(543L);
+    when(clientJooqDao.getClientById(543L)).thenReturn(Optional.of(client));
     when(aclJooqDao.getGroupsFor(client)).thenReturn(ImmutableSet.of());
 
     ClientDetailResponse response = ClientDetailResponse.fromClient(client, ImmutableList.of(),
@@ -99,9 +99,9 @@ public class AutomationClientResourceTest {
 
     CreateClientRequest request = new CreateClientRequest("client");
 
-    when(clientDAO.getClient("client")).thenReturn(Optional.empty());
-    when(clientDAO.createClient("client", automation.getName(), Optional.empty())).thenReturn(543L);
-    when(clientDAO.getClientById(543L)).thenReturn(Optional.of(client));
+    when(clientJooqDao.getClient("client")).thenReturn(Optional.empty());
+    when(clientJooqDao.createClient("client", automation.getName(), Optional.empty())).thenReturn(543L);
+    when(clientJooqDao.getClientById(543L)).thenReturn(Optional.of(client));
 
     ClientDetailResponse response = ClientDetailResponse.fromClient(client, ImmutableList.of(),
         ImmutableList.of());

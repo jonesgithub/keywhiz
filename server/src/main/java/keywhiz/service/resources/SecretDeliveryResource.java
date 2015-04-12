@@ -35,7 +35,7 @@ import keywhiz.api.model.SanitizedSecret;
 import keywhiz.api.model.Secret;
 import keywhiz.service.config.Readonly;
 import keywhiz.service.daos.AclJooqDao;
-import keywhiz.service.daos.ClientDAO;
+import keywhiz.service.daos.ClientJooqDao;
 import keywhiz.service.daos.SecretController;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.slf4j.Logger;
@@ -55,14 +55,14 @@ public class SecretDeliveryResource {
   private final Logger logger = LoggerFactory.getLogger(SecretDeliveryResource.class);
   private final SecretController secretController;
   private final AclJooqDao aclJooqDao;
-  private final ClientDAO clientDAO;
+  private final ClientJooqDao clientJooqDao;
 
   @Inject
   public SecretDeliveryResource(@Readonly SecretController secretController,
-      @Readonly AclJooqDao aclJooqDao, @Readonly ClientDAO clientDAO) {
+      @Readonly AclJooqDao aclJooqDao, @Readonly ClientJooqDao clientJooqDao) {
     this.secretController = secretController;
     this.aclJooqDao = aclJooqDao;
-    this.clientDAO = clientDAO;
+    this.clientJooqDao = clientJooqDao;
   }
 
   /**
@@ -92,7 +92,7 @@ public class SecretDeliveryResource {
     Optional<Secret> secret = secretController.getSecretByNameAndVersion(name, version);
 
     if (!sanitizedSecret.isPresent()) {
-      boolean clientExists = clientDAO.getClient(client.getName()).isPresent();
+      boolean clientExists = clientJooqDao.getClient(client.getName()).isPresent();
       boolean secretExists = secret.isPresent();
 
       if (clientExists && secretExists) {
