@@ -15,9 +15,6 @@
  */
 package keywhiz;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import com.codahale.metrics.jdbi.InstrumentedTimingCollector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -27,17 +24,6 @@ import io.dropwizard.auth.basic.BasicCredentials;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.java8.auth.Authenticator;
-import io.dropwizard.java8.jdbi.DBIFactory;
-import io.dropwizard.java8.jdbi.OptionalContainerFactory;
-import io.dropwizard.java8.jdbi.args.LocalDateTimeArgumentFactory;
-import io.dropwizard.java8.jdbi.args.LocalDateTimeMapper;
-import io.dropwizard.java8.jdbi.args.OptionalArgumentFactory;
-import io.dropwizard.jdbi.ImmutableListContainerFactory;
-import io.dropwizard.jdbi.ImmutableSetContainerFactory;
-import io.dropwizard.jdbi.NamePrependingStatementRewriter;
-import io.dropwizard.jdbi.args.JodaDateTimeArgumentFactory;
-import io.dropwizard.jdbi.args.JodaDateTimeMapper;
-import io.dropwizard.jdbi.logging.LogbackLog;
 import io.dropwizard.setup.Environment;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -49,7 +35,6 @@ import keywhiz.auth.cookie.SessionCookie;
 import keywhiz.auth.xsrf.Xsrf;
 import keywhiz.generators.SecretGeneratorBindingModule;
 import keywhiz.generators.TemplatedSecretGenerator;
-import keywhiz.jdbi.SanerNamingStrategy;
 import keywhiz.service.config.Readonly;
 import keywhiz.service.crypto.ContentCryptographer;
 import keywhiz.service.crypto.CryptoModule;
@@ -57,7 +42,6 @@ import keywhiz.service.crypto.SecretTransformer;
 import keywhiz.service.daos.AclJooqDao;
 import keywhiz.service.daos.ClientJooqDao;
 import keywhiz.service.daos.GroupJooqDao;
-import keywhiz.service.daos.MapArgumentFactory;
 import keywhiz.service.daos.SecretContentJooqDao;
 import keywhiz.service.daos.SecretController;
 import keywhiz.service.daos.SecretJooqDao;
@@ -65,15 +49,12 @@ import keywhiz.service.daos.SecretSeriesJooqDao;
 import keywhiz.service.daos.UserJooqDao;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
-import org.skife.jdbi.v2.ColonPrefixNamedParamStatementRewriter;
-import org.skife.jdbi.v2.DBI;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ServiceModule extends AbstractModule {
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ServiceModule.class);
-  private static final Logger DBI_LOGGER = (Logger) LoggerFactory.getLogger(DBI.class);
 
   private final Environment environment;
   private final KeywhizConfig config;
@@ -113,19 +94,6 @@ public class ServiceModule extends AbstractModule {
     return environment.getObjectMapper();
   }
 
-  @Provides @Singleton DBIFactory dbiFactory() {
-    return new DBIFactory();
-  }
-
-  @Provides @Singleton
-  @Readonly DBI readonlyDbi(DBIFactory factory, Environment environment, KeywhizConfig config,
-      MapArgumentFactory mapArgumentFactory) throws ClassNotFoundException {
-    logger.debug("Creating read-only DBI");
-    DBI dbi = factory.build(environment, config.getReadonlyDataSourceFactory(), "postgres-readonly");
-    dbi.registerArgumentFactory(mapArgumentFactory);
-    return dbi;
-  }
-
   @Provides @Singleton ManagedDataSource writableDataSource(Environment environment, KeywhizConfig config) {
     DataSourceFactory dataSourceFactory = config.getDataSourceFactory();
     ManagedDataSource dataSource = dataSourceFactory.build(environment.metrics(), "postgres-writable");
@@ -142,40 +110,6 @@ public class ServiceModule extends AbstractModule {
         "postgres-readonly");
     // TODO: do we need to do environment.lifecycle().manage(dataSource)?
     return dataSource;
-  }
-
-  /**
-   * Super lame copy of functionality from {@link DBIFactory}. Want both DBI instances to perform
-   * similarly, however do NOT want a health check of the writable DBI. Failure should allow host
-   * to remain in rotation of healthy servers since readonly DBI sufficient for critical tasks.
-   */
-  @Provides @Singleton DBI dbi(Environment environment, KeywhizConfig config,
-      MapArgumentFactory mapArgumentFactory, ManagedDataSource dataSource) throws ClassNotFoundException {
-    logger.debug("Creating DBI");
-
-    DataSourceFactory dataSourceFactory = config.getDataSourceFactory();
-    final DBI dbi = new DBI(dataSource);
-    dbi.setSQLLog(new LogbackLog(DBI_LOGGER, Level.TRACE));
-    dbi.setTimingCollector(new InstrumentedTimingCollector(environment.metrics(),
-        new SanerNamingStrategy()));
-    if (dataSourceFactory.isAutoCommentsEnabled()) {
-      dbi.setStatementRewriter(new NamePrependingStatementRewriter(new ColonPrefixNamedParamStatementRewriter()));
-    }
-
-    dbi.registerArgumentFactory(mapArgumentFactory);
-    dbi.registerArgumentFactory(
-        new io.dropwizard.jdbi.args.OptionalArgumentFactory(dataSourceFactory.getDriverClass()));
-    dbi.registerContainerFactory(new ImmutableListContainerFactory());
-    dbi.registerContainerFactory(new ImmutableSetContainerFactory());
-    dbi.registerContainerFactory(new io.dropwizard.jdbi.OptionalContainerFactory());
-    dbi.registerArgumentFactory(new JodaDateTimeArgumentFactory());
-    dbi.registerMapper(new JodaDateTimeMapper());
-    dbi.registerArgumentFactory(new OptionalArgumentFactory(dataSourceFactory.getDriverClass()));
-    dbi.registerContainerFactory(new OptionalContainerFactory());
-    dbi.registerArgumentFactory(new LocalDateTimeArgumentFactory());
-    dbi.registerMapper(new LocalDateTimeMapper());
-
-    return dbi;
   }
 
   @Provides @Singleton @Readonly SecretController readonlySecretController(

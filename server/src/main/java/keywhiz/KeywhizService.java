@@ -25,15 +25,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.dropwizard.Application;
 import io.dropwizard.java8.Java8Bundle;
-import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-import javax.servlet.DispatcherType;
 import keywhiz.auth.mutualssl.ClientCertificateFilter;
 import keywhiz.auth.xsrf.XsrfServletFilter;
 import keywhiz.commands.MigrateCommand;
@@ -141,7 +138,6 @@ public class KeywhizService extends Application<KeywhizConfig> {
     bootstrap.addBundle(new Java8Bundle());
     bootstrap.addBundle(new NamedAssetsBundle());
     bootstrap.addBundle(new UiAssetsBundle());
-    bootstrap.addBundle(new DBIExceptionsBundle());
   }
 
   @SuppressWarnings("unchecked")
