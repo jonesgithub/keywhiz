@@ -224,7 +224,8 @@ public class AclJooqDao {
     checkArgument(!name.isEmpty());
     checkNotNull(version);
 
-    return dslContext.transactionResult(configuration -> {
+    // Cast to fix issue with mvn + java8 (not showing up in Intellij).
+    return (Optional<SanitizedSecret>)dslContext.transactionResult(configuration -> {
       Optional<SecretSeries> secretSeries = getSecretSeriesFor(client, name);
       if (!secretSeries.isPresent()) {
         return Optional.empty();
