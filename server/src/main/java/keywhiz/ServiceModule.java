@@ -15,6 +15,7 @@
  */
 package keywhiz;
 
+import com.codahale.metrics.health.HealthCheck;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -25,6 +26,7 @@ import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.java8.auth.Authenticator;
 import io.dropwizard.setup.Environment;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import keywhiz.auth.BouncyCastle;
@@ -86,6 +88,21 @@ public class ServiceModule extends AbstractModule {
     install(new SecretGeneratorBindingModule() {
       @Override protected void configure() {
         bindSecretGenerator("templated", TemplatedSecretGenerator.class);
+      }
+    });
+
+    // Add Dropwizard health check for readonly database
+    environment.healthChecks().register("postgres-readonly-health", new HealthCheck() {
+      @Override protected Result check() {
+        try {
+          Connection connection = readonlyDataSource(environment, config).getConnection();
+          DSLContext readOnlyDB = DSL.using(connection);
+          readOnlyDB.selectOne().execute();
+          connection.close();
+          return Result.healthy();
+        } catch (SQLException e) {
+          return Result.unhealthy("Unhealthy connection to readonly database.");
+        }
       }
     });
   }
