@@ -54,7 +54,8 @@ public class AclDAO {
   private SecretSeriesDAO secretSeriesDAO;
 
   @Inject
-  public AclDAO(DSLContext dslContext, ClientDAO clientDAO, GroupDAO groupDAO, SecretContentDAO secretContentDAO, SecretSeriesDAO secretSeriesDAO) {
+  public AclDAO(DSLContext dslContext, ClientDAO clientDAO, GroupDAO groupDAO,
+      SecretContentDAO secretContentDAO, SecretSeriesDAO secretSeriesDAO) {
     this.dslContext = dslContext;
     this.clientDAO = clientDAO;
     this.groupDAO = groupDAO;
